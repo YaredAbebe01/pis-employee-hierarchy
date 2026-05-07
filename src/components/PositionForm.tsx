@@ -28,6 +28,9 @@ type PositionFormProps = {
   isSubmitting?: boolean;
   onSubmit: (values: PositionFormValues) => void;
   submitLabel: string;
+  cancelLabel?: string;
+  onCancel?: () => void;
+  parentHelpText?: string;
 };
 
 export default function PositionForm({
@@ -37,6 +40,9 @@ export default function PositionForm({
   isSubmitting,
   onSubmit,
   submitLabel,
+  cancelLabel = "Cancel",
+  onCancel,
+  parentHelpText,
 }: PositionFormProps) {
   const {
     register,
@@ -85,6 +91,7 @@ export default function PositionForm({
               label="Parent position"
               placeholder="No parent (root)"
               data={options}
+              description={parentHelpText}
               clearable
               value={field.value ? String(field.value) : null}
               onChange={(value) =>
@@ -93,7 +100,12 @@ export default function PositionForm({
             />
           )}
         />
-        <Group justify="flex-end">
+        <Group justify={onCancel ? "space-between" : "flex-end"}>
+          {onCancel ? (
+            <Button variant="subtle" color="gray" onClick={onCancel}>
+              {cancelLabel}
+            </Button>
+          ) : null}
           <Button type="submit" color="orange" loading={isSubmitting}>
             {submitLabel}
           </Button>

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ActionIcon, Group, Text, ThemeIcon } from "@mantine/core";
 import {
   IconBriefcase,
@@ -14,20 +13,24 @@ import type { PositionNode } from "@/types/position";
 
 type PositionTreeProps = {
   nodes: PositionNode[];
-  onDelete: (id: number) => void;
+  onDelete?: (id: number) => void;
+  onEdit?: (id: number) => void;
   selectedId: number | null;
   onSelect: (id: number) => void;
   expandedIds: Set<number>;
   onToggle: (id: number) => void;
+  showActions?: boolean;
 };
 
 export default function PositionTree({
   nodes,
   onDelete,
+  onEdit,
   selectedId,
   onSelect,
   expandedIds,
   onToggle,
+  showActions = true,
 }: PositionTreeProps) {
   return (
     <ul className="space-y-4">
@@ -36,10 +39,12 @@ export default function PositionTree({
           key={node.id}
           node={node}
           onDelete={onDelete}
+          onEdit={onEdit}
           selectedId={selectedId}
           onSelect={onSelect}
           expandedIds={expandedIds}
           onToggle={onToggle}
+          showActions={showActions}
         />
       ))}
     </ul>
@@ -48,20 +53,24 @@ export default function PositionTree({
 
 type TreeItemProps = {
   node: PositionNode;
-  onDelete: (id: number) => void;
+  onDelete?: (id: number) => void;
+  onEdit?: (id: number) => void;
   selectedId: number | null;
   onSelect: (id: number) => void;
   expandedIds: Set<number>;
   onToggle: (id: number) => void;
+  showActions: boolean;
 };
 
 function TreeItem({
   node,
   onDelete,
+  onEdit,
   selectedId,
   onSelect,
   expandedIds,
   onToggle,
+  showActions,
 }: TreeItemProps) {
   const isExpanded = expandedIds.has(node.id);
   const hasChildren = node.children.length > 0;
@@ -115,27 +124,28 @@ function TreeItem({
               </Text>
             </div>
           </Group>
-          <Group gap={6} onClick={(event) => event.stopPropagation()}>
-            <ActionIcon
-              component={Link}
-              href={`/positions/${node.id}`}
-              variant="light"
-              color="orange"
-              size="sm"
-              aria-label="Edit position"
-            >
-              <IconPencil size={16} />
-            </ActionIcon>
-            <ActionIcon
-              variant="light"
-              color="red"
-              size="sm"
-              aria-label="Delete position"
-              onClick={() => onDelete(node.id)}
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
-          </Group>
+          {showActions ? (
+            <Group gap={6} onClick={(event) => event.stopPropagation()}>
+              <ActionIcon
+                variant="light"
+                color="orange"
+                size="sm"
+                aria-label="Edit position"
+                onClick={() => onEdit?.(node.id)}
+              >
+                <IconPencil size={16} />
+              </ActionIcon>
+              <ActionIcon
+                variant="light"
+                color="red"
+                size="sm"
+                aria-label="Delete position"
+                onClick={() => onDelete?.(node.id)}
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Group>
+          ) : null}
         </Group>
       </div>
       {hasChildren && isExpanded ? (
@@ -145,10 +155,12 @@ function TreeItem({
               key={child.id}
               node={child}
               onDelete={onDelete}
+              onEdit={onEdit}
               selectedId={selectedId}
               onSelect={onSelect}
               expandedIds={expandedIds}
               onToggle={onToggle}
+              showActions={showActions}
             />
           ))}
         </ul>

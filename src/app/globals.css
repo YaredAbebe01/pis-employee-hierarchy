@@ -3,21 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --ink-900: #1f1a14;
-  --ink-700: #3a3028;
-  --sand-50: #fbf7f0;
-  --sand-100: #f6eee2;
-  --sand-200: #f1e0cc;
-  --accent-500: #e07a3f;
-  --accent-600: #cc6a35;
+  --ink-900: #2c3947;
+  --ink-700: #547a95;
+  --canvas-50: #e8edf2;
+  --accent-500: #c2a56d;
+  --accent-600: #b3925a;
 }
 
 body {
   color: var(--ink-900);
   background:
-    radial-gradient(900px 500px at 15% 10%, #f7e7d6 0%, transparent 60%),
-    radial-gradient(800px 400px at 85% 15%, #f2d4b6 0%, transparent 55%),
-    linear-gradient(180deg, var(--sand-50), var(--sand-100));
+    radial-gradient(900px 500px at 15% 10%, #f1f5f9 0%, transparent 60%),
+    radial-gradient(800px 400px at 85% 15%, #d9e3ec 0%, transparent 55%),
+    linear-gradient(180deg, var(--canvas-50), #f6f8fb);
   min-height: 100vh;
 }
 
@@ -26,8 +24,22 @@ body {
 }
 
 .surface {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(58, 48, 40, 0.08);
-  box-shadow: 0 10px 30px rgba(31, 26, 20, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(44, 57, 71, 0.08);
+  box-shadow: 0 10px 30px rgba(44, 57, 71, 0.08);
   backdrop-filter: blur(10px);
+}
+
+[data-mantine-color-scheme="dark"] body {
+  color: #e8edf2;
+  background:
+    radial-gradient(900px 500px at 20% 10%, rgba(84, 122, 149, 0.25) 0%, transparent 60%),
+    radial-gradient(800px 400px at 80% 15%, rgba(194, 165, 109, 0.15) 0%, transparent 55%),
+    linear-gradient(180deg, #1e2a35, #2c3947);
+}
+
+[data-mantine-color-scheme="dark"] .surface {
+  background: rgba(24, 34, 44, 0.85);
+  border: 1px solid rgba(194, 165, 109, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }

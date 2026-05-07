@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Button, Card, Container, Group, Text, Title } from "@mantine/core";
+import {
+  Button,
+  Card,
+  Container,
+  Group,
+  Loader,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
@@ -30,11 +39,12 @@ export default function EditPositionPage({ params }: EditPositionPageProps) {
     () => items.find((item) => item.id === positionId),
     [items, positionId]
   );
+  const isLoading = status === "idle" || status === "loading";
 
-  if (status !== "loading" && !position) {
+  if (!position && status === "succeeded") {
     return (
-      <main className="app-shell py-10">
-        <Container size="sm">
+      <main className="app-shell py-12">
+        <Container size="md">
           <Card className="surface" radius="xl" padding="lg">
             <Title order={3}>Position not found</Title>
             <Text c="dimmed" mt="sm">
@@ -50,9 +60,9 @@ export default function EditPositionPage({ params }: EditPositionPageProps) {
   }
 
   return (
-    <main className="app-shell py-10">
-      <Container size="sm">
-        <Group justify="space-between" mb="lg">
+    <main className="app-shell py-12">
+      <Container size="md">
+        <Group justify="space-between" align="flex-start" mb="xl">
           <div>
             <Title order={2}>Edit position</Title>
             <Text c="dimmed">Update role details or move it in the tree.</Text>
@@ -61,8 +71,14 @@ export default function EditPositionPage({ params }: EditPositionPageProps) {
             Back to list
           </Button>
         </Group>
-        <Card className="surface" radius="xl" padding="lg">
-          {position ? (
+        <Card className="surface rounded-3xl" padding="xl">
+          {isLoading ? (
+            <Stack gap="sm" align="center" py="xl">
+              <Loader color="orange" />
+              <Text c="dimmed">Loading position details...</Text>
+            </Stack>
+          ) : null}
+          {position && !isLoading ? (
             <PositionForm
               positions={items}
               excludeId={position.id}

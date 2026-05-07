@@ -72,3 +72,4 @@ export function filterPositionsByQuery(
 
   return items.filter((item) => includeIds.has(item.id));
 }
+
