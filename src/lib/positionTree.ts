@@ -1,7 +1,7 @@
 import type { Position, PositionNode } from "@/types/position";
 
 export function buildPositionTree(items: Position[]): PositionNode[] {
-  const nodes = new Map<number, PositionNode>();
+  const nodes = new Map<string, PositionNode>();
   const roots: PositionNode[] = [];
 
   items.forEach((item) => {
@@ -19,12 +19,12 @@ export function buildPositionTree(items: Position[]): PositionNode[] {
   return roots;
 }
 
-export function buildPositionMap(items: Position[]): Map<number, Position> {
+export function buildPositionMap(items: Position[]): Map<string, Position> {
   return new Map(items.map((item) => [item.id, item]));
 }
 
 export function getPositionPath(
-  selectedId: number | null,
+  selectedId: string | null,
   items: Position[]
 ): Position[] {
   if (!selectedId) {
@@ -43,6 +43,39 @@ export function getPositionPath(
   return path;
 }
 
+export function getDescendantIds(
+  rootId: string,
+  items: Position[]
+): Set<string> {
+  const childrenMap = new Map<string, string[]>();
+
+  items.forEach((item) => {
+    if (!item.parentId) {
+      return;
+    }
+    const siblings = childrenMap.get(item.parentId) || [];
+    siblings.push(item.id);
+    childrenMap.set(item.parentId, siblings);
+  });
+
+  const stack = childrenMap.get(rootId) ? [...childrenMap.get(rootId)!] : [];
+  const descendants = new Set<string>();
+
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current || descendants.has(current)) {
+      continue;
+    }
+    descendants.add(current);
+    const next = childrenMap.get(current);
+    if (next?.length) {
+      stack.push(...next);
+    }
+  }
+
+  return descendants;
+}
+
 export function filterPositionsByQuery(
   items: Position[],
   query: string
@@ -53,7 +86,7 @@ export function filterPositionsByQuery(
   }
 
   const map = buildPositionMap(items);
-  const includeIds = new Set<number>();
+  const includeIds = new Set<string>();
 
   items.forEach((item) => {
     const matches =

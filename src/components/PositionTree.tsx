@@ -13,12 +13,12 @@ import type { PositionNode } from "@/types/position";
 
 type PositionTreeProps = {
   nodes: PositionNode[];
-  onDelete?: (id: number) => void;
-  onEdit?: (id: number) => void;
-  selectedId: number | null;
-  onSelect: (id: number) => void;
-  expandedIds: Set<number>;
-  onToggle: (id: number) => void;
+  onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  expandedIds: Set<string>;
+  onToggle: (id: string) => void;
   showActions?: boolean;
 };
 
@@ -53,12 +53,12 @@ export default function PositionTree({
 
 type TreeItemProps = {
   node: PositionNode;
-  onDelete?: (id: number) => void;
-  onEdit?: (id: number) => void;
-  selectedId: number | null;
-  onSelect: (id: number) => void;
-  expandedIds: Set<number>;
-  onToggle: (id: number) => void;
+  onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  expandedIds: Set<string>;
+  onToggle: (id: string) => void;
   showActions: boolean;
 };
 
@@ -73,7 +73,8 @@ function TreeItem({
   showActions,
 }: TreeItemProps) {
   const isExpanded = expandedIds.has(node.id);
-  const hasChildren = node.children.length > 0;
+  const children = Array.isArray(node.children) ? node.children : [];
+  const hasChildren = children.length > 0;
 
   return (
     <li>
@@ -150,7 +151,7 @@ function TreeItem({
       </div>
       {hasChildren && isExpanded ? (
         <ul className="mt-3 space-y-3 border-l border-dashed border-orange-200 pl-5">
-          {node.children.map((child) => (
+          {children.map((child) => (
             <TreeItem
               key={child.id}
               node={child}

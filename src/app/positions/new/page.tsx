@@ -7,17 +7,27 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import PositionForm from "@/components/PositionForm";
-import { createPosition, fetchPositions } from "@/features/positions/positionsSlice";
+import {
+  clearMutationErrors,
+  createPosition,
+  fetchPositions,
+  fetchPositionsTree,
+} from "@/features/positions/positionsSlice";
+import type { ApiError } from "@/lib/api";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 export default function CreatePositionPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { items, status } = useAppSelector((state) => state.positions);
+  const { mutationStatus, fieldErrors } = useAppSelector(
+    (state) => state.positions
+  );
 
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchPositions());
+      dispatch(fetchPositionsTree());
     }
   }, [dispatch, status]);
 
@@ -37,7 +47,10 @@ export default function CreatePositionPage() {
           <PositionForm
             positions={items}
             submitLabel="Create position"
+            isSubmitting={mutationStatus === "loading"}
+            serverErrors={fieldErrors}
             onSubmit={async (values) => {
+              dispatch(clearMutationErrors());
               try {
                 await dispatch(createPosition(values)).unwrap();
                 notifications.show({
@@ -47,6 +60,10 @@ export default function CreatePositionPage() {
                 });
                 router.push("/");
               } catch (err) {
+                const apiError = err as ApiError;
+                if (apiError?.status === 400) {
+                  return { fieldErrors: apiError.fieldErrors };
+                }
                 notifications.show({
                   title: "Create failed",
                   message: "Unable to create the position.",

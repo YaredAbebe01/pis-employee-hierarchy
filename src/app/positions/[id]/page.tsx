@@ -16,8 +16,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 
 import PositionForm from "@/components/PositionForm";
-import { fetchPositions, updatePosition } from "@/features/positions/positionsSlice";
+import {
+  clearMutationErrors,
+  fetchPositionById,
+  fetchPositions,
+  fetchPositionsTree,
+  updatePosition,
+} from "@/features/positions/positionsSlice";
+import type { ApiError } from "@/lib/api";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { getDescendantIds } from "@/lib/positionTree";
 
 type EditPositionPageProps = {
   params: { id: string };
@@ -26,20 +34,24 @@ type EditPositionPageProps = {
 export default function EditPositionPage({ params }: EditPositionPageProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { items, status } = useAppSelector((state) => state.positions);
-  const positionId = Number(params.id);
+  const { items, status, selected, mutationStatus, fieldErrors } = useAppSelector(
+    (state) => state.positions
+  );
+  const positionId = params.id;
 
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchPositions());
+      dispatch(fetchPositionsTree());
     }
-  }, [dispatch, status]);
+    dispatch(fetchPositionById({ id: positionId, includeChildren: true }));
+  }, [dispatch, positionId, status]);
 
   const position = useMemo(
-    () => items.find((item) => item.id === positionId),
-    [items, positionId]
+    () => items.find((item) => item.id === positionId) || selected,
+    [items, positionId, selected]
   );
-  const isLoading = status === "idle" || status === "loading";
+  const isLoading = status === "idle" || status === "loading" || !position;
 
   if (!position && status === "succeeded") {
     return (
@@ -82,13 +94,17 @@ export default function EditPositionPage({ params }: EditPositionPageProps) {
             <PositionForm
               positions={items}
               excludeId={position.id}
+              excludeIds={Array.from(getDescendantIds(position.id, items))}
               initialValues={{
                 name: position.name,
                 description: position.description,
                 parentId: position.parentId,
               }}
               submitLabel="Save changes"
+              isSubmitting={mutationStatus === "loading"}
+              serverErrors={fieldErrors}
               onSubmit={async (values) => {
+                dispatch(clearMutationErrors());
                 try {
                   await dispatch(
                     updatePosition({
@@ -105,6 +121,18 @@ export default function EditPositionPage({ params }: EditPositionPageProps) {
                   });
                   router.push("/");
                 } catch (err) {
+                  const apiError = err as ApiError;
+                  if (apiError?.status === 400) {
+                    return { fieldErrors: apiError.fieldErrors };
+                  }
+                  if (apiError?.status === 409) {
+                    notifications.show({
+                      title: "Cannot move",
+                      message: "Cannot delete/move due to hierarchy rule.",
+                      color: "red",
+                    });
+                    return;
+                  }
                   notifications.show({
                     title: "Update failed",
                     message: "Unable to update the position.",

@@ -5,13 +5,17 @@ import {
   findPositionById,
   updatePositionById,
 } from "../data";
-import type { Position } from "@/types/position";
+type PositionPayload = {
+  name: string;
+  description: string;
+  parentId: string | null;
+};
 
 export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = Number(params.id);
+  const id = params.id;
   const position = findPositionById(id);
 
   if (!position) {
@@ -25,8 +29,8 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = Number(params.id);
-  const body = (await request.json()) as Position;
+  const id = params.id;
+  const body = (await request.json()) as PositionPayload;
 
   if (!body.name || !body.description) {
     return NextResponse.json(
@@ -36,7 +40,6 @@ export async function PUT(
   }
 
   const updated = updatePositionById(id, {
-    id,
     name: body.name,
     description: body.description,
     parentId: body.parentId ?? null,
@@ -53,7 +56,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = Number(params.id);
+  const id = params.id;
   const removed = deletePositionById(id);
 
   if (!removed) {

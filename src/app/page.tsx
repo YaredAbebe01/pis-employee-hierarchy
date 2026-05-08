@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   Alert,
   Badge,
@@ -30,6 +29,9 @@ import {
   IconSitemap,
   IconMoonStars,
   IconSun,
+  IconUsers,
+  IconHierarchy2,
+  IconTargetArrow,
 } from "@tabler/icons-react";
 
 import PositionForm from "@/components/PositionForm";
@@ -49,8 +51,8 @@ export default function PositionsListPage() {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const { items, status, error } = useAppSelector((state) => state.positions);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (status === "idle") {
@@ -82,7 +84,7 @@ export default function PositionsListPage() {
     }
   }, [items, searchQuery]);
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     const position = items.find((item) => item.id === id);
     const directReports = items.filter((item) => item.parentId === id).length;
 
@@ -207,7 +209,7 @@ export default function PositionsListPage() {
     });
   };
 
-  const openEditModal = (id: number) => {
+  const openEditModal = (id: string) => {
     const position = items.find((item) => item.id === id);
     if (!position) {
       return;
@@ -275,6 +277,9 @@ export default function PositionsListPage() {
   }, [items, selectedId]);
 
   const selectedPosition = useMemo(() => {
+    if (!selectedId) {
+      return null;
+    }
     return items.find((item) => item.id === selectedId) || null;
   }, [items, selectedId]);
 
@@ -293,46 +298,108 @@ export default function PositionsListPage() {
   }, [items, selectedPosition]);
 
   return (
-    <main className="app-shell py-8">
-      <Container size="lg">
-        <Group justify="space-between" align="center" mb="xl">
-          <Group gap="sm">
-            <ThemeIcon size="lg" radius="md" variant="light" color="orange">
-              <IconSitemap size={20} />
-            </ThemeIcon>
-            <Title order={3}>OrgDirector</Title>
+    <main className="app-shell py-10">
+      <Container size="xl">
+        <div className="hero-shell mb-10">
+          <Group justify="space-between" align="center" wrap="wrap" mb="xl">
+            <Group gap="sm">
+              <ThemeIcon size="lg" radius="md" variant="light" color="teal">
+                <IconSitemap size={20} />
+              </ThemeIcon>
+              <div>
+                <Title order={2} mt={6}>
+                  OrgDirector Console
+                </Title>
+                <Text c="dimmed" mt={4}>
+                  A polished command center for shaping leadership structure and reporting lines.
+                </Text>
+              </div>
+            </Group>
+            <Group gap="sm">
+              <ActionIcon
+                variant="light"
+                color="teal"
+                size="lg"
+                aria-label="Toggle color scheme"
+                onClick={() => toggleColorScheme()}
+              >
+                {colorScheme === "dark" ? (
+                  <IconSun size={18} />
+                ) : (
+                  <IconMoonStars size={18} />
+                )}
+              </ActionIcon>
+              <Button
+                color="teal"
+                radius="md"
+                leftSection={<IconPlus size={18} />}
+                onClick={openCreateModal}
+              >
+                Add Position
+              </Button>
+            </Group>
           </Group>
-          <Group gap="sm">
-            <ActionIcon
-              variant="light"
-              color="blue"
-              size="lg"
-              aria-label="Toggle color scheme"
-              onClick={() => toggleColorScheme()}
-            >
-              {colorScheme === "dark" ? (
-                <IconSun size={18} />
-              ) : (
-                <IconMoonStars size={18} />
-              )}
-            </ActionIcon>
-            <Button
-              color="blue"
-              leftSection={<IconPlus size={18} />}
-              onClick={openCreateModal}
-            >
-              Add Position
-            </Button>
-          </Group>
-        </Group>
+          <div className="hero-grid">
+            <div className="stat-card">
+              <Group gap="sm" align="center">
+                <ThemeIcon size="lg" radius="md" variant="light" color="teal">
+                  <IconUsers size={18} />
+                </ThemeIcon>
+                <div>
+                  <Text size="xs" c="dimmed">
+                    TOTAL POSITIONS
+                  </Text>
+                  <Text fw={700} size="lg">
+                    {items.length}
+                  </Text>
+                </div>
+              </Group>
+            </div>
+            <div className="stat-card">
+              <Group gap="sm" align="center">
+                <ThemeIcon size="lg" radius="md" variant="light" color="orange">
+                  <IconHierarchy2 size={18} />
+                </ThemeIcon>
+                <div>
+                  <Text size="xs" c="dimmed">
+                    ROOT ROLES
+                  </Text>
+                  <Text fw={700} size="lg">
+                    {items.filter((item) => !item.parentId).length}
+                  </Text>
+                </div>
+              </Group>
+            </div>
+            <div className="stat-card">
+              <Group gap="sm" align="center">
+                <ThemeIcon size="lg" radius="md" variant="light" color="indigo">
+                  <IconTargetArrow size={18} />
+                </ThemeIcon>
+                <div>
+                  <Text size="xs" c="dimmed">
+                    SEARCH MATCHES
+                  </Text>
+                  <Text fw={700} size="lg">
+                    {filtered.length}
+                  </Text>
+                </div>
+              </Group>
+            </div>
+          </div>
+        </div>
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <Card className="surface self-start" radius="xl" padding="lg">
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <Card className="tree-panel self-start" radius="xl" padding="lg">
             <Stack gap="md">
               <Group justify="space-between" align="center" wrap="wrap">
-                <Text fw={600}>Organization Tree</Text>
+                <div>
+                  <Text fw={700}>Organization Tree</Text>
+                  <Text size="xs" c="dimmed">
+                    Expand nodes to view reporting structure.
+                  </Text>
+                </div>
                 <TextInput
-                  placeholder="Search positions"
+                  placeholder="Search roles"
                   value={searchQuery}
                   onChange={(event) =>
                     setSearchQuery(event.currentTarget.value)
@@ -378,13 +445,10 @@ export default function PositionsListPage() {
             </Stack>
           </Card>
 
-          <Card className="surface self-start" radius="xl" padding="lg">
+          <Card className="details-panel self-start" radius="xl" padding="lg">
             <Stack gap="md">
               <Group justify="space-between" align="center">
-                <Text fw={600}>Position Details</Text>
-                <Badge color="blue" variant="light">
-                  ACTIVE
-                </Badge>
+                <Text fw={700}>Position Intelligence</Text>
               </Group>
               {selectedPosition ? (
                 <>
@@ -420,7 +484,7 @@ export default function PositionsListPage() {
                     </Text>
                   </div>
                   {selectedPath.length > 0 ? (
-                    <div className="rounded-xl bg-orange-50 px-3 py-2">
+                    <div className="rounded-xl bg-white/70 px-3 py-2">
                       <Text size="xs" c="dimmed">
                         PATH
                       </Text>
@@ -431,9 +495,19 @@ export default function PositionsListPage() {
                   ) : null}
                 </>
               ) : (
-                <Text size="sm" c="dimmed">
-                  Select a node to see details.
-                </Text>
+                <Stack gap="sm">
+                  <Text size="sm" c="dimmed">
+                    Select a node to see insights, reporting lines, and context.
+                  </Text>
+                  <Paper radius="lg" p="md" className="bg-white/70">
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                      Tip
+                    </Text>
+                    <Text size="sm">
+                      Use the search field to quickly locate roles by title or description.
+                    </Text>
+                  </Paper>
+                </Stack>
               )}
             </Stack>
           </Card>

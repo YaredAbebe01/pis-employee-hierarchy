@@ -1,8 +1,10 @@
 export type Position = {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  parentId: number | null;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type PositionNode = Position & {
