@@ -23,7 +23,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <ColorSchemeScript />
+        <ColorSchemeScript
+          defaultColorScheme="light"
+          localStorageKey="pis-color-scheme"
+        />
       </head>
       <body className={spaceGrotesk.className}>
         <AppProviders>{children}</AppProviders>

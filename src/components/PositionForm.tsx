@@ -143,11 +143,21 @@ export default function PositionForm({
         />
         <Group justify={onCancel ? "space-between" : "flex-end"}>
           {onCancel ? (
-            <Button variant="outline" color="red" onClick={onCancel}>
+            <Button
+              variant="outline"
+              color="red"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
               {cancelLabel}
             </Button>
           ) : null}
-          <Button type="submit" color="blue" loading={isSubmitting}>
+          <Button
+            type="submit"
+            color="blue"
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
             {submitLabel}
           </Button>
         </Group>

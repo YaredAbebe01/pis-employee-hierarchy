@@ -9,6 +9,7 @@ import {
   Container,
   Divider,
   Group,
+  Loader,
   Paper,
   Skeleton,
   Stack,
@@ -17,6 +18,7 @@ import {
   Title,
   ThemeIcon,
   ActionIcon,
+  useComputedColorScheme,
   useMantineColorScheme,
 } from "@mantine/core";
 import { modals } from "@mantine/modals";
@@ -46,19 +48,75 @@ import { usePositionTree } from "@/hooks/usePositionTree";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getPositionPath } from "@/lib/positionTree";
 
+type ConfirmActionModalProps = {
+  body: React.ReactNode;
+  confirmLabel: string;
+  confirmColor: string;
+  cancelLabel?: string;
+  onConfirm: () => Promise<void>;
+  onCancel: () => void;
+};
+
+function ConfirmActionModal({
+  body,
+  confirmLabel,
+  confirmColor,
+  cancelLabel = "Cancel",
+  onConfirm,
+  onCancel,
+}: ConfirmActionModalProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    try {
+      await onConfirm();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Stack gap="md">
+      {body}
+      <Group justify="flex-end">
+        <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          {cancelLabel}
+        </Button>
+        <Button
+          color={confirmColor}
+          loading={isSubmitting}
+          disabled={isSubmitting}
+          onClick={handleConfirm}
+        >
+          {isSubmitting ? <Loader size="xs" color="white" /> : confirmLabel}
+        </Button>
+      </Group>
+    </Stack>
+  );
+}
+
 export default function PositionsListPage() {
   const dispatch = useAppDispatch();
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const { toggleColorScheme } = useMantineColorScheme();
+  const computedColorScheme = useComputedColorScheme("light", {
+    getInitialValueInEffect: true,
+  });
   const { items, status, error } = useAppSelector((state) => state.positions);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchPositions());
     }
   }, [dispatch, status]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const { tree, filtered } = usePositionTree(items, searchQuery);
 
@@ -87,66 +145,90 @@ export default function PositionsListPage() {
   const handleDelete = (id: string) => {
     const position = items.find((item) => item.id === id);
     const directReports = items.filter((item) => item.parentId === id).length;
+    const modalId = `delete-position-${id}`;
 
-    modals.openConfirmModal({
+    modals.open({
+      modalId,
       centered: true,
       withCloseButton: false,
       closeOnClickOutside: false,
+      closeOnEscape: false,
       size: "sm",
       title: null,
       children: (
-        <Stack gap="sm">
-          <Center>
-            <ThemeIcon
-              size={48}
-              radius="xl"
-              color="red"
-              variant="light"
-            >
-              <IconAlertTriangle size={24} />
-            </ThemeIcon>
-          </Center>
-          <div className="text-center">
-            <Text fw={700} size="lg">
-              Delete Position?
-            </Text>
-            <Text size="sm" c="dimmed" mt={4}>
-              Are you sure you want to delete the
-              {position ? ` "${position.name}"` : " this"} position? This will
-              affect its direct reports.
-            </Text>
-          </div>
-          <Paper
-            radius="md"
-            p="sm"
-            className="border border-slate-200 bg-slate-50"
-          >
-            <Text size="xs" c="dimmed">
-              {directReports} employees currently reporting to this position will
-              need to be reassigned to a new supervisor.
-            </Text>
-          </Paper>
-        </Stack>
+        <ConfirmActionModal
+          confirmLabel="Delete"
+          confirmColor="red"
+          onCancel={() => modals.close(modalId)}
+          onConfirm={async () => {
+            const noticeId = `delete-${id}`;
+            modals.close(modalId);
+            notifications.show({
+              id: noticeId,
+              loading: true,
+              title: "Deleting position",
+              message: "Working on it...",
+              autoClose: false,
+            });
+            try {
+              await dispatch(deletePosition(id)).unwrap();
+              notifications.update({
+                id: noticeId,
+                title: "Position deleted",
+                message: "The position was removed successfully.",
+                color: "orange",
+                loading: false,
+                autoClose: 2000,
+              });
+            } catch (err) {
+              const status =
+                typeof err === "object" && err !== null && "status" in err
+                  ? Number((err as { status?: number }).status)
+                  : null;
+              notifications.update({
+                id: noticeId,
+                title: "Delete failed",
+                message:
+                  status === 409
+                    ? "Cannot delete a position with direct reports—reassign them first."
+                    : "Unable to delete the position.",
+                color: "red",
+                loading: false,
+                autoClose: 3000,
+              });
+            }
+          }}
+          body={
+            <Stack gap="sm">
+              <Center>
+                <ThemeIcon size={48} radius="xl" color="red" variant="light">
+                  <IconAlertTriangle size={24} />
+                </ThemeIcon>
+              </Center>
+              <div className="text-center">
+                <Text fw={700} size="lg">
+                  Delete Position?
+                </Text>
+                <Text size="sm" c="dimmed" mt={4}>
+                  Are you sure you want to delete the
+                  {position ? ` "${position.name}"` : " this"} position? This will
+                  affect its direct reports.
+                </Text>
+              </div>
+              <Paper
+                radius="md"
+                p="sm"
+                className="border border-slate-200 bg-slate-50"
+              >
+                <Text size="xs" c="dimmed">
+                  {directReports} employees currently reporting to this position
+                  will need to be reassigned to a new supervisor.
+                </Text>
+              </Paper>
+            </Stack>
+          }
+        />
       ),
-      labels: { confirm: "Delete", cancel: "Cancel" },
-      confirmProps: { color: "red", radius: "md" },
-      cancelProps: { radius: "md" },
-      onConfirm: async () => {
-        try {
-          await dispatch(deletePosition(id)).unwrap();
-          notifications.show({
-            title: "Position deleted",
-            message: "The position was removed successfully.",
-            color: "orange",
-          });
-        } catch (err) {
-          notifications.show({
-            title: "Delete failed",
-            message: "Unable to delete the position.",
-            color: "red",
-          });
-        }
-      },
     });
   };
 
@@ -164,34 +246,55 @@ export default function PositionsListPage() {
             parentHelpText="This position will report directly to the selected manager."
             onCancel={() => modals.closeAll()}
             onSubmit={(values) => {
-              modals.openConfirmModal({
+              const modalId = `create-position-${Date.now()}`;
+              modals.open({
+                modalId,
                 title: "Create position?",
                 centered: true,
-                labels: { confirm: "Create", cancel: "Cancel" },
-                confirmProps: { color: "blue" },
                 children: (
-                  <Text size="sm">
-                    Are you sure you want to create the position
-                    {values.name ? ` "${values.name}"` : ""}?
-                  </Text>
+                  <ConfirmActionModal
+                    confirmLabel="Create"
+                    confirmColor="blue"
+                    onCancel={() => modals.close(modalId)}
+                    onConfirm={async () => {
+                      const noticeId = `create-${Date.now()}`;
+                      modals.close(modalId);
+                      notifications.show({
+                        id: noticeId,
+                        loading: true,
+                        title: "Creating position",
+                        message: "Working on it...",
+                        autoClose: false,
+                      });
+                      try {
+                        await dispatch(createPosition(values)).unwrap();
+                        notifications.update({
+                          id: noticeId,
+                          title: "Position created",
+                          message: "The new position is now in the hierarchy.",
+                          color: "orange",
+                          loading: false,
+                          autoClose: 2000,
+                        });
+                      } catch (err) {
+                        notifications.update({
+                          id: noticeId,
+                          title: "Create failed",
+                          message: "Unable to create the position.",
+                          color: "red",
+                          loading: false,
+                          autoClose: 3000,
+                        });
+                      }
+                    }}
+                    body={
+                      <Text size="sm">
+                        Are you sure you want to create the position
+                        {values.name ? ` "${values.name}"` : ""}?
+                      </Text>
+                    }
+                  />
                 ),
-                onConfirm: async () => {
-                  try {
-                    await dispatch(createPosition(values)).unwrap();
-                    notifications.show({
-                      title: "Position created",
-                      message: "The new position is now in the hierarchy.",
-                      color: "orange",
-                    });
-                    modals.closeAll();
-                  } catch (err) {
-                    notifications.show({
-                      title: "Create failed",
-                      message: "Unable to create the position.",
-                      color: "red",
-                    });
-                  }
-                },
               });
             }}
           />
@@ -234,28 +337,49 @@ export default function PositionsListPage() {
             parentHelpText="Updating the parent will reposition this role in the hierarchy."
             onCancel={() => modals.closeAll()}
             onSubmit={async (values) => {
-              try {
-                await dispatch(
-                  updatePosition({
-                    id: position.id,
-                    name: values.name,
-                    description: values.description,
-                    parentId: values.parentId,
-                  })
-                ).unwrap();
-                notifications.show({
-                  title: "Position updated",
-                  message: "Changes saved successfully.",
-                  color: "orange",
-                });
-                modals.closeAll();
-              } catch (err) {
-                notifications.show({
-                  title: "Update failed",
-                  message: "Unable to update the position.",
-                  color: "red",
-                });
-              }
+              const modalId = `edit-position-${position.id}-${Date.now()}`;
+              modals.open({
+                modalId,
+                title: "Save changes?",
+                centered: true,
+                children: (
+                  <ConfirmActionModal
+                    confirmLabel="Save"
+                    confirmColor="blue"
+                    onCancel={() => modals.close(modalId)}
+                    onConfirm={async () => {
+                      try {
+                        await dispatch(
+                          updatePosition({
+                            id: position.id,
+                            name: values.name,
+                            description: values.description,
+                            parentId: values.parentId,
+                          })
+                        ).unwrap();
+                        notifications.show({
+                          title: "Position updated",
+                          message: "Changes saved successfully.",
+                          color: "orange",
+                        });
+                        modals.closeAll();
+                      } catch (err) {
+                        notifications.show({
+                          title: "Update failed",
+                          message: "Unable to update the position.",
+                          color: "red",
+                        });
+                      }
+                    }}
+                    body={
+                      <Text size="sm">
+                        Save updates to
+                        {values.name ? ` "${values.name}"` : " this position"}?
+                      </Text>
+                    }
+                  />
+                ),
+              });
             }}
           />
           <Alert
@@ -323,10 +447,14 @@ export default function PositionsListPage() {
                 aria-label="Toggle color scheme"
                 onClick={() => toggleColorScheme()}
               >
-                {colorScheme === "dark" ? (
-                  <IconSun size={18} />
+                {isMounted ? (
+                  computedColorScheme === "dark" ? (
+                    <IconSun size={18} />
+                  ) : (
+                    <IconMoonStars size={18} />
+                  )
                 ) : (
-                  <IconMoonStars size={18} />
+                  <span className="block h-[18px] w-[18px]" />
                 )}
               </ActionIcon>
               <Button

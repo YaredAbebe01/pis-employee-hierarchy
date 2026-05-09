@@ -7,6 +7,7 @@ import {
 import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 import { Provider } from "react-redux";
+import { useMemo } from "react";
 
 import { store } from "@/lib/store";
 
@@ -15,9 +16,13 @@ export default function AppProviders({
 }: {
   children: React.ReactNode;
 }) {
-  const colorSchemeManager = localStorageColorSchemeManager({
-    key: "pis-color-scheme",
-  });
+  const colorSchemeManager = useMemo(
+    () =>
+      localStorageColorSchemeManager({
+        key: "pis-color-scheme",
+      }),
+    [],
+  );
 
   return (
     <Provider store={store}>

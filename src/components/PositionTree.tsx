@@ -33,7 +33,7 @@ export default function PositionTree({
   showActions = true,
 }: PositionTreeProps) {
   return (
-    <ul className="space-y-4">
+    <ul className="org-tree">
       {nodes.map((node) => (
         <TreeItem
           key={node.id}
@@ -77,22 +77,26 @@ function TreeItem({
   const hasChildren = children.length > 0;
 
   return (
-    <li>
+    <li className="org-node-item">
       <div
-        className={`surface rounded-2xl border px-4 py-3 transition ${
-          selectedId === node.id
-            ? "border-orange-300 bg-orange-50/40"
-            : "border-transparent"
+        className={`org-node ${
+          selectedId === node.id ? "org-node--selected" : ""
         }`}
         onClick={() => onSelect(node.id)}
       >
-        <Group justify="space-between" align="center" wrap="nowrap">
+        <Group
+          justify="space-between"
+          align="center"
+          wrap="nowrap"
+          className="org-node__header"
+        >
           <Group gap="sm" align="center" wrap="nowrap">
             {hasChildren ? (
               <ActionIcon
                 size="sm"
                 variant="subtle"
                 color="gray"
+                className="org-node__toggle"
                 aria-label={isExpanded ? "Collapse node" : "Expand node"}
                 onClick={(event) => {
                   event.stopPropagation();
@@ -106,7 +110,7 @@ function TreeItem({
                 )}
               </ActionIcon>
             ) : (
-              <span className="w-5" />
+              <span className="org-node__toggle-spacer" />
             )}
             <ThemeIcon
               size="lg"
@@ -116,17 +120,21 @@ function TreeItem({
             >
               <IconBriefcase size={18} />
             </ThemeIcon>
-            <div>
-              <Text fw={600} size="sm">
+            <div className="org-node__text">
+              <Text fw={600} size="sm" className="org-node__title">
                 {node.name}
               </Text>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" className="org-node__meta">
                 {node.description || "No description"}
               </Text>
             </div>
           </Group>
           {showActions ? (
-            <Group gap={6} onClick={(event) => event.stopPropagation()}>
+            <Group
+              gap={6}
+              className="org-node__actions"
+              onClick={(event) => event.stopPropagation()}
+            >
               <ActionIcon
                 variant="light"
                 color="orange"
@@ -150,7 +158,7 @@ function TreeItem({
         </Group>
       </div>
       {hasChildren && isExpanded ? (
-        <ul className="mt-3 space-y-3 border-l border-dashed border-orange-200 pl-5">
+        <ul className="org-children">
           {children.map((child) => (
             <TreeItem
               key={child.id}
