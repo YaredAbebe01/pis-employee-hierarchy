@@ -258,7 +258,7 @@ export default function PositionsListPage() {
                     onCancel={() => modals.close(modalId)}
                     onConfirm={async () => {
                       const noticeId = `create-${Date.now()}`;
-                      modals.close(modalId);
+                      modals.closeAll();
                       notifications.show({
                         id: noticeId,
                         loading: true,
